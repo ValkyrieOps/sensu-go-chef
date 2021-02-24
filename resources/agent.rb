@@ -55,8 +55,30 @@ action :install do
       end
     end
 
-    systemd_unit 'sensu-agent' do
-      action :nothing
+
+    systemd_unit 'sensu-agent.service' do
+      content(Unit: {
+                Description: 'The Sensu Agent process.',
+                After: 'network-online.target',
+                Wants: 'network-online.target'
+              },
+              Service: {
+                Type: 'simple',
+                User: 'sensu',
+                Group: 'sensu',
+                EnvironmentFile:'-/etc/default/sensu-agent',
+                EnvironmentFile:'-/etc/sysconfig/sensu-agent',
+                LimitNOFILE:'65535',
+                ExecStart:'/usr/sbin/sensu-agent start -c /etc/sensu/agent.yml',
+                ExecReload:'/bin/kill -HUP $MAINPID',
+                Restart:'always',
+                WorkingDirectory:'/'
+              },
+              Install: {
+                WantedBy: 'multi-user-target'
+              })
+      action :create
+      verify false
     end
 
     # render template at /etc/sensu/agent.yml for linux
